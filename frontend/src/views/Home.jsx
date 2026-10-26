@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
+import { LOCAL_WEB } from '../lib/local-web.js'
 import { effectiveRoutines, effectiveRoutineIds, nextTrainingDay, streakWeeks, lastBW, setsDoneActive } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekStartOf, weekDayOffset, DAYS, DAYN } from '../lib/format.js'
 import { t, tn, dateLocale } from '../lib/i18n.js'
@@ -106,6 +107,12 @@ export default function Home() {
       <div><h1>{user ? t('Hi {0}', user.name) : 'openGym'}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={trouble ? t('Settings') + ', ' + t('Connection problem') : t('Settings')}><Icon name="gear" />{trouble && <span className="tab-dot" aria-hidden="true" />}</button>
     </div>
+
+    {LOCAL_WEB && <div className="card small muted" style={{ marginBottom: 14 }}>
+      <strong>{t('Local edition')}</strong>
+      <p style={{ margin: '6px 0 10px' }}>{t('Your training data stays in this browser. Export a backup before changing devices or clearing website data.')}</p>
+      <Button size="sm" variant="tinted" icon="folder" onClick={() => nav('/settings/data')}>{t('Data & backup')}</Button>
+    </div>}
 
     <div className="card">
       {/* A coach week runs by order, not by weekday, so its progress row stands in for the

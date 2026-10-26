@@ -4,6 +4,7 @@ import { localTZ } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { registerCustom, healCustomEx } from '../lib/exercises.js'
 import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
+import { LOCAL_WEB, LOCAL_WEB_CONFIG } from '../lib/local-web.js'
 import { rememberDefaultLang } from '../lib/default-lang.js'
 import { guestAllowed } from '../lib/guest.js'
 import { MOBILE, initReminderSync, nativeLoad, nativeSave, onAppActive, readJsonFile, syncReminder, writeAutoBackup, writeJsonFile } from '../lib/mobile.js'
@@ -262,7 +263,7 @@ const detectedLang = () => {
 // merged under a saved copy it would claim that every existing profile never chose.
 export function freshState() {
   const s = clone(DEF)
-  s.lang = detectedLang()
+  s.lang = LOCAL_WEB ? 'zh' : detectedLang()
   s.langAuto = true
   s.weighIn = false
   // Exercise animations: Small (v1.3.11), a thumbnail beside the exercise name that a tap opens,
@@ -1303,7 +1304,7 @@ export const useStore = create((set, get) => {
   // check has to ask (lib/media-owed.js). A copy without any leaves the media store unopened.
   if (referencedHashes(S0).size) loadPending()
   meta.set(S0, { base: readStoredSync(), owed: storedOwed() })
-  const user0 = (() => { try { return JSON.parse(localStorage.getItem('gym_user')) || null } catch { return null } })()
+  const user0 = LOCAL_WEB ? null : (() => { try { return JSON.parse(localStorage.getItem('gym_user')) || null } catch { return null } })()
   adoptHold = !!user0 && readAdopt()?.uid === user0.id
   const sync0 = { offline: false, pending: storedOwed(), auth: false, lastError: null, lastSynced: (() => { try { return +localStorage.getItem(SYNCED_AT_KEY) || 0 } catch { return 0 } })(), server: serverBase(), held: adoptHold }
   sync0.status = statusOf(sync0, user0)
@@ -1535,6 +1536,11 @@ export const useStore = create((set, get) => {
     // Two callers that ask at once get one request: signing in re-asks (setUser) and the pairing
     // flow awaits a refresh of its own immediately after, and there is one answer to have.
     async refreshConfig() {
+      if (LOCAL_WEB) {
+        rememberDefaultLang(LOCAL_WEB_CONFIG)
+        set({ config: LOCAL_WEB_CONFIG })
+        return LOCAL_WEB_CONFIG
+      }
       if (configFetch) return configFetch
       configFetch = (async () => {
         try { const c = await api('/api/config'); rememberDefaultLang(c); set({ config: c }); return c }
@@ -1892,6 +1898,7 @@ export const useStore = create((set, get) => {
     // Demo build only: drop the seeded example profile back in (Settings → "Reset demo data").
     // Dynamic import so the generator never ships in a self-hosted bundle.
     async resetDemo() {
+      if (LOCAL_WEB) return
       const { buildDemoState } = await import('../lib/demoSeed.js')
       markOwed(false)
       persist(Object.assign(clone(DEF), buildDemoState()), false)
@@ -1901,6 +1908,17 @@ export const useStore = create((set, get) => {
 
     // Boot: ask the server who we are, then pull.
     async boot() {
+      if (LOCAL_WEB) {
+        // Preserve the saved training log on every boot, including after updates.
+        // A stale account from another build cannot start background sync here.
+        localStorage.removeItem('gym_user')
+        localStorage.removeItem('gym_owner')
+        set({ user: null })
+        await get().loadConfig()
+        get().setGuest(true)
+        finishBoot()
+        return
+      }
       // Mobile build: no backend by default — restore from the file mirror (the durable copy;
       // localStorage may have been evicted since the last run) and go straight in. Unless this
       // device was paired to a server ("connect to my server" mode, lib/remote.js), in which

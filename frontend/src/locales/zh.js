@@ -1,5 +1,8 @@
 // Simplified Chinese UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+  'Local edition': '本地记录版',
+  'Your training data stays in this browser. Export a backup before changing devices or clearing website data.': '训练记录保存在当前浏览器中。更换设备或清理网站数据前，请先导出备份。',
+  'Updates are published with this website.': '新版本随网页发布，请定期备份训练记录。',
   'Confirm': '确认',
   'Cancel': '取消',
   'Press back again to exit': '再按一次返回退出',

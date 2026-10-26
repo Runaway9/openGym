@@ -1,6 +1,7 @@
 // Backend + WebAuthn helpers (ported from the vanilla app).
 import { t } from './i18n-core.js'
 import { MOBILE } from './mobile.js'
+import { LOCAL_WEB } from './local-web.js'
 import { appBase } from './app-base.js'
 import { nativeFetch } from './capacitor-fetch.js'
 
@@ -52,6 +53,7 @@ const TIMEOUT_MS = 60000
 const failure = (message, code, status) => Object.assign(new Error(message), { code, status })
 
 export async function api(path, opts) {
+  if (LOCAL_WEB) throw failure('This edition stores data in this browser and has no API.', 'local-only', 0)
   const { timeout, ...init } = opts || {}
   // A phone with no server to talk to: local mode, or a pairing that is gone. There is no
   // relative URL to fall back on here — the WebView's own origin is Capacitor's local asset
